@@ -1,0 +1,159 @@
+buildscript {
+    ext {
+        springCloudVersion = 'Hoxton.SR6'
+        springBootVersion = '2.3.0.RELEASE'
+        springVersion = '5.2.6.RELEASE'
+        springBootAdminVersion = '2.3.0'
+    }
+    repositories {
+        maven { url 'https://plugins.gradle.org/m2/' }
+        mavenCentral()
+        maven { url 'https://repo.spring.io/plugins-release' }
+    }
+    dependencies {
+        classpath "org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}"
+        classpath 'io.spring.gradle:dependency-management-plugin:1.0.6.RELEASE'
+        classpath 'io.spring.gradle:propdeps-plugin:0.0.10.RELEASE'
+        classpath 'com.github.ksoichiro:gradle-build-info-plugin:0.2.0'
+        classpath 'net.researchgate:gradle-release:2.6.0'
+        classpath 'com.bmuschko:gradle-docker-plugin:6.6.1'
+    }
+}
+
+allprojects {
+    apply plugin: 'java'
+    apply plugin: 'idea'
+
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        jcenter()
+        maven {
+            url 'https://jitpack.io'
+        }
+        flatDir {
+            dirs "$rootProject.projectDir/libs"
+        }
+    }
+
+    tasks.withType(JavaCompile) {
+        options.encoding = "UTF-8"
+    }
+
+    configurations.all {
+        resolutionStrategy.cacheChangingModulesFor  0,'seconds'
+    }
+}
+
+project(':eproject-dbc-boot') {
+    apply plugin: 'java'
+    apply plugin: 'maven'
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'propdeps'
+    apply plugin: "io.spring.dependency-management"
+    apply plugin: 'net.researchgate.release'
+    apply plugin: 'com.github.ksoichiro.build.info'
+    apply plugin: 'com.bmuschko.docker-spring-boot-application'
+
+    apply from: "${serviceTemplateGit}/gradle/services.gradle"
+
+    group 'com.github.xiaoyao9184.eproject'
+    version "${version}"
+    description "H2 web console in spring boot"
+
+    dependencies {
+
+        //Cloud
+        implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+
+        //Boot
+        runtime 'org.springframework.boot:spring-boot-devtools'
+        implementation 'org.springframework.boot:spring-boot-starter-web'
+        implementation 'org.springframework.boot:spring-boot-starter-security'
+        implementation "org.springframework.boot:spring-boot-starter-oauth2-resource-server"
+
+        //BootAdmin
+        implementation "de.codecentric:spring-boot-admin-starter-client:${springBootAdminVersion}"
+
+        //Jolokia
+        implementation 'org.jolokia:jolokia-core'
+
+        //security-oauth2-client-authentication
+        compile 'com.github.xiaoyao9184.spring-security-expansion:security-oauth2-client-authentication:master-SNAPSHOT'
+
+        //H2
+        implementation group: 'com.h2database', name: 'h2', version: '1.4.200'
+        //mssql(JTDS)
+        implementation group: 'net.sourceforge.jtds', name: 'jtds', version:'1.3.0'
+        //mssql
+        implementation group: 'com.microsoft.sqlserver', name: 'mssql-jdbc', version: '9.2.0.jre8'
+        //mysql
+        implementation group: 'mysql', name: 'mysql-connector-java', version: '8.0.23'
+        //postgresql
+        implementation group: 'org.postgresql', name: 'postgresql', version: '42.2.19'
+
+
+        testImplementation group: 'junit', name: 'junit', version: '4.12'
+        testImplementation group: 'org.springframework', name: 'spring-test', version:"${springVersion}"
+    }
+
+    dependencyManagement {
+        imports {
+            mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+        }
+        resolutionStrategy {
+            cacheChangingModulesFor 0, 'seconds'
+        }
+    }
+
+    springBoot {
+        buildInfo()
+    }
+
+    buildInfo {
+        committerDateFormat 'yyyy-MM-dd HH:mm:ss Z'
+        buildDateFormat 'yyyy-MM-dd HH:mm:ss Z'
+        manifestEnabled true
+        gitPropertiesEnabled true
+        gitInfoMode com.github.ksoichiro.build.info.BuildInfoExtension.MODE_DEFAULT
+        warnIfGitDirectoryIsMissing false
+        attributeGitBranchEnabled true
+        attributeGitCommitEnabled true
+        attributeGitCommitterDateEnabled true
+        attributeBuildDateEnabled true
+        attributeBuildJavaVersionEnabled true
+        attributeBuildJavaVendorEnabled true
+        attributeBuildOsNameEnabled true
+        attributeBuildOsVersionEnabled true
+    }
+
+    release {
+        failOnCommitNeeded = true
+        failOnPublishNeeded = true
+        failOnSnapshotDependencies = false
+        failOnUnversionedFiles = false
+        failOnUpdateNeeded = true
+        revertOnFail = true
+        preCommitText = ''
+        preTagCommitMessage = '[Gradle Release Plugin] - pre tag: '
+        tagCommitMessage = '[Gradle Release Plugin] - tag: '
+        newVersionCommitMessage = '[Gradle Release Plugin] - new version: '
+        tagTemplate = '${version}'
+        versionPropertyFile = "${rootProject.projectDir}/gradle.properties"
+        versionProperties = []
+        buildTasks = ['bootJar']
+        scmAdapters = [
+                net.researchgate.release.GitAdapter
+        ]
+
+        git {
+            requireBranch = 'master'
+            pushToRemote = 'origin'
+            pushToBranchPrefix = ''
+            commitVersionFileOnly = false
+        }
+    }
+}

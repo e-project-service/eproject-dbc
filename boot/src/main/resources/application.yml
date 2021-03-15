@@ -1,0 +1,197 @@
+
+
+---
+
+debug: true
+
+spring:
+  profiles: dev
+
+eproject:
+  auth:
+    domain: me:8080
+    context-path: /uaa
+  admin:
+    domain: me:2333
+  eureka:
+    domain: me:2335
+
+logging:
+  level:
+    ROOT: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.security.oauth2: DEBUG
+
+
+---
+
+spring:
+  profiles: test
+  h2:
+    console:
+      enabled: true
+
+eproject:
+  auth:
+    domain: auth.eproject.com:16666
+    context-path:
+  admin:
+    domain: admin.eproject.com:2333
+  eureka:
+    domain: eureka.eproject.com:2335
+
+logging:
+  level:
+    ROOT: ERROR
+
+
+---
+
+spring:
+  profiles: prod
+  h2:
+    console:
+      enabled: true
+
+eproject:
+  auth:
+    domain: auth.eproject.com:16666
+    context-path:
+  admin:
+    domain: admin.eproject.com:2333
+  eureka:
+    domain: eureka.eproject.com:2335
+
+logging:
+  level:
+    ROOT: ERROR
+
+
+---
+
+spring:
+  profiles: docker
+
+eproject:
+  auth:
+    domain: auth.eproject.com:16666
+    context-path:
+  admin:
+    domain: eproject-admin:2333
+  eureka:
+    domain: eproject-eureka:2335
+
+logging:
+  level:
+    ROOT: ERROR
+
+
+---
+
+server:
+  port: 2341
+  servlet:
+    context-path: /dbc-service
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+
+spring:
+  application:
+    name: eProject-DBC
+  aop:
+    proxy-target-class: true
+  boot:
+    admin:
+      client:
+        url: http://${eproject.admin.domain}/admin-service
+        api-path: /api/applications
+  security:
+    user:
+      roles: ACTUATOR,DEV
+      name: dev
+      password: XY@dev1024
+    oauth2:
+      client:
+        registration:
+          auth-sso:
+            provider: uaa
+            client-id: eProject-DBC
+            client-secret: dbc123
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/"
+            client-name: sso
+            scope:
+              - openid
+              - dbc.admin
+          auth-client-auth-code:
+            provider: uaa
+            client-id: eProject-DBC
+            client-secret: dbc123
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/client/{registrationId}"
+            client-name: authorization_code
+            scope:
+              - openid
+              - dbc.admin
+          auth-client-implicit:
+            provider: uaa
+            client-id: eProject-DBC
+            client-secret: dbc123
+            authorization-grant-type: implicit
+            #set to UI html
+            redirect-uri: "{baseUrl}/token.html"
+            client-name: implicit
+            scope:
+              - openid
+              - dbc.admin
+          auth-client-client-creds:
+            provider: uaa
+            client-id: eProject-DBC
+            client-secret: dbc123
+            authorization-grant-type: client_credentials
+            client-name: client_credentials
+            redirect-uri: "{baseUrl}/login/oauth2/client/{registrationId}"
+            authority: DEV
+          auth-client-password:
+            provider: uaa
+            client-id: eProject-DBC
+            client-secret: dbc123
+            authorization-grant-type: password
+            client-name: password
+            redirect-uri: "{baseUrl}/login/oauth2/client/{registrationId}"
+            scope:
+              - openid
+              - dbc.admin
+        provider:
+          uaa:
+#            authorization-uri: http://${eproject.auth.domain}${eproject.auth.context-path}/oauth/authorize
+#            token-uri: http://${eproject.auth.domain}${eproject.auth.context-path}/oauth/token
+#            jwk-set-uri: http://${eproject.auth.domain}${eproject.auth.context-path}/token_keys
+#            user-info-uri: http://${eproject.auth.domain}${eproject.auth.context-path}/userinfo
+#            user-name-attribute: name
+            issuer-uri: http://${eproject.auth.domain}${eproject.auth.context-path}/oauth/token
+      resourceserver:
+        opaquetoken:
+          client-id: eProject-DBC
+          client-secret: dbc123
+          introspection-uri: http://${eproject.auth.domain}${eproject.auth.context-path}/oauth/check_token
+  h2:
+    console:
+      enabled: true
+      settings:
+        web-allow-others: true
+
+eureka:
+  client:
+    registerWithEureka: false
+    fetchRegistry: true
+    serviceUrl:
+      defaultZone: http://${eproject.eureka.domain}/eureka-service/eureka
+
+logging:
+  level:
+    ROOT: ERROR
