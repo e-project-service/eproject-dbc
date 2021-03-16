@@ -102,13 +102,14 @@ management:
 spring:
   application:
     name: eProject-DBC
-  aop:
-    proxy-target-class: true
   boot:
     admin:
       client:
         url: http://${eproject.admin.domain}/admin-service
-        api-path: /api/applications
+        instance:
+          metadata:
+            user.name: ${spring.security.user.name}
+            user.password: ${spring.security.user.password}
   security:
     user:
       roles: ACTUATOR,DEV
@@ -172,9 +173,12 @@ spring:
 #            token-uri: http://${eproject.auth.domain}${eproject.auth.context-path}/oauth/token
 #            jwk-set-uri: http://${eproject.auth.domain}${eproject.auth.context-path}/token_keys
 #            user-info-uri: http://${eproject.auth.domain}${eproject.auth.context-path}/userinfo
-#            user-name-attribute: name
+            user-name-attribute: user_name
             issuer-uri: http://${eproject.auth.domain}${eproject.auth.context-path}/oauth/token
       resourceserver:
+        jwt:
+          jwk-set-uri: http://${eproject.auth.domain}${eproject.auth.context-path}/token_keys
+          issuer-uri: http://${eproject.auth.domain}${eproject.auth.context-path}/oauth/token
         opaquetoken:
           client-id: eProject-DBC
           client-secret: dbc123
@@ -187,9 +191,9 @@ spring:
 
 eureka:
   client:
-    registerWithEureka: false
-    fetchRegistry: true
-    serviceUrl:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
       defaultZone: http://${eproject.eureka.domain}/eureka-service/eureka
 
 logging:
